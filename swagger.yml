@@ -1,6 +1,6 @@
 openapi: "3.0.0"
 info:
-  title: Click BNPL API
+  title: CLICK-JIT BNPL API specification
   description: >
     Универсальные API для управление BNPL
   version: "1.0.4"
@@ -13,16 +13,16 @@ security:
   - OAuth2: []
 
 tags:
-  - name: BNPL API
+  - name: CLICK-JIT API
     description: Универсальные API для BNPL операций
 
 paths:
   /api/bnpl/partner/v1/payment:
     post:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Создание платежа
-      description: Создает новый платеж через BNPL.
+      description: Создает новый платеж через JIT.
       requestBody:
         required: true
         content:
@@ -46,7 +46,7 @@ paths:
   /api/bnpl/partner/v1/client/personalisation:
     get:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Получение персонализации клиента
       description: Возвращает персонализационные данные клиента.
       parameters:
@@ -89,7 +89,7 @@ paths:
   /api/bnpl/partner/v1/accounts/list:
     get:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Список карт клиента
       description: Возвращает список доступных карт клиента.
       parameters:
@@ -122,7 +122,7 @@ paths:
   /api/bnpl/partner/v1/application/complete:
     patch:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Обновление статуса заявки
       description: Обновляет статус заявки BNPL.
       requestBody:
@@ -152,7 +152,7 @@ paths:
   /api/bnpl/general/v2/payment/status:
     get:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Получить статус платежа
       description: Возвращает текущий статус платежа из БД сервиса BNPL
       parameters:
@@ -199,7 +199,7 @@ paths:
   /api/bnpl/general/v2/payment/state:
     get:
       tags:
-        - BNPL API
+        - CLICK-JIT API
       summary: Получить состояние.
       description: Получить состояние платежа по ключу инедепонтенсности из ядра (CLICK core DB)
       parameters:
@@ -288,6 +288,7 @@ components:
       properties:
         paymentId:
           type: integer
+          format: int64
           description: "Идентификатор платежа"
         paymentStatus:
           type: string
@@ -307,6 +308,7 @@ components:
           properties:
             client_id:
               type: integer
+              format: int64
               description: "Идентификатор клиента в системе клик"
               example: 3700001
             identified:
@@ -342,7 +344,7 @@ components:
               description: "Сколько карт имеется у клиента"
               example: 4
             pinfl:
-              type: integer
+              type: string
               description: "PINFL клиента"
               example: 12345678900000
             encrypted_pinfl:
