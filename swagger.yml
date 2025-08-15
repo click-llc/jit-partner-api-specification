@@ -125,61 +125,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/bnpl/general/v2/payment/status:
-    get:
-      tags:
-        - CLICK-JIT API
-      summary: Получить статус платежа
-      description: Возвращает текущий статус платежа из БД сервиса BNPL / JIT
-      parameters:
-        - name: paymentId
-          in: query
-          required: true
-          schema:
-            type: integer
-            description: Уникальный ID платежа.
-            example: 4185468796
-      responses:
-        "200":
-          description: Успешный ответ
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  paymentId:
-                    type: integer
-                    description: Уникальный ID платежа.
-                    example: 4185468796
-                  status:
-                    type: integer
-                    description: Статус платежа.
-                    example: 2
-                  statusDescription:
-                    type: string
-                    description: Описание статуса.
-                    example: "Успешно"
-        "400":
-          description: Если платеж не найден
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "422":
-          description: Ошибка валидации
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "429":
-          description: Too Many Requests - Rate limit exceeded.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                "status": "ERR_TOO_MANY_REQUESTS"
-                "message": "Rate limit exceeded. Please try again later."
 
   /api/bnpl/general/v2/payment/state:
     get:
