@@ -1,0 +1,295 @@
+openapi: "3.0.0"
+info:
+  title: CLICK-JIT BNPL API specification
+  description: >
+    Универсальные API для управление BNPL (JIT-CLICK)
+  version: "1.0.4"
+
+servers:
+  - url: https://bnpl-sandbox.click.uz:8000
+    description: Sandbox Environment
+
+security:
+  - OAuth2: []
+
+tags:
+  - name: JIT-CLICK API
+    description: Универсальные API для BNPL / JIT операций
+
+paths:
+  /click/api/v1/checkout-with-plans/get:
+    post:
+      tags:
+        - JIT-CLICK API
+      summary: Получить планы списаний
+      description: Отправка запрос на прескор клиента и получение планы списаний
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/checkoutCreateBodySchema'
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jitPlanSchema'
+        "400":
+          description: Default Error Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+  
+
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://sandbox-bnpl.click.uz:8000/oauth/token
+          scopes: {}
+
+  schemas:
+    checkoutCreateBodySchema:
+      required:
+      - checkout
+      - checkout_id
+      - user_id
+      type: object
+      properties:
+        checkout_id:
+          type: string
+          format: uuid
+          description: Единый идентификатор для платежей
+          example: "d9892e31-0000-4225-ab03-0c8f34bb70f8"
+        user_id:
+          type: string
+          description: Идентификатор пользователя
+          example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
+        checkout:
+          description: Данные про чекаут
+          required:
+          - amount
+          - currency
+          - geo
+          - items
+          - merchant
+          type: object
+          properties:
+            amount:
+              type: string
+              description: Сумма чекаута
+              example: "12000.00"
+            currency:
+              type: string
+              description: Валюта
+              example: "UZS"
+            geo:
+              description: Геоданные филиала мерчанта
+              required:
+              - latitude
+              - longitude
+              type: object
+              properties:
+                longitude:
+                  description: Широта
+                  type: string
+                  example: "40.741895"
+                latitude:
+                  description: Долгота
+                  type: string
+                  example: "-73.989308"
+            merchant:
+              description: Данные мерчанта
+              required:
+              - id
+              - logo
+              - name
+              type: object
+              properties:
+                id:
+                  description: Идентификатор мерчанта
+                  type: string
+                  example: "50028"
+                name:
+                  description: Название мерчанта
+                  type: string
+                  example: "Shishka"
+                logo:
+                  description: Логотип мерчанта
+                  type: string
+                  example: "https:\\\/\\\/example.com\\\/logo.png"
+            items:
+              description: Данные о товары
+              type: array
+              items:
+                required:
+                - amount
+                - count
+                - currency
+                - id
+                - name
+                - total_amount
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Идентификатор товара
+                    example: "0"
+                  name:
+                    type: string
+                    description: Название товара
+                    example: "Cappucino"
+                  count:
+                    type: integer
+                    description: Число товара
+                    example: 1
+                  amount:
+                    type: string
+                    description: Сумма товара
+                    example: "20000.00"
+                  currency:
+                    type: string
+                    description: Валюта
+                    example: "UZS"
+                  total_amount:
+                    type: string
+                    description: Общая сумма товаров
+                    example: "20000.00"
+
+    jitPlanSchema:
+      required:
+      - plans
+      type: object
+      properties:
+        default_plan:
+          description: Текущий идентификатор плана
+          type: string
+          format: uuid
+          example: "200000b38-70aa-49d7-93b9-946b15aa74ad"
+        plans:
+          description: Планы списаний
+          type: array
+          items:
+            required:
+            - constructor
+            - id
+            - payments
+            - product_type
+            type: object
+            properties:
+              id:
+                description: Идентификатор плана
+                type: string
+                format: uuid
+                example: "200000b38-70aa-49d7-93b9-946b15aa74ad"
+              product_type:
+                description: Тип продукта
+                type: string
+                enum:
+                - full_payment
+                - base_jit
+                - long_jit
+                - credit_full_payment
+                - pay_full_payment
+                - pay_later
+                - base_jit_uz
+              constructor:
+                description: Тип конструктора оплаты
+                type: string
+                example: "jit_10_days_afterpay_uz"
+              payments:
+                description: Детали платежа
+                type: array
+                items:
+                  $ref: '#/components/schemas/checkoutPayments'
+              sum:
+                type: string
+                description: Общая сумма платежа
+                example: "70000.00"
+              currency:
+                type: string
+                description: Валюта платежа
+                example: "UZS"
+              fee:
+                type: string
+                description: Комиссия платежа
+                example: "0.00"
+              constructor_details:
+                description: Параметры конструктора
+                required:
+                - length_in_months
+                - payments_interval
+                - length_in_days
+                type: object
+                properties:
+                  length_in_months:
+                    type: integer
+                    description: Длительность рассрочки в месяцы
+                    example: 0
+                  length_in_days:
+                    type: integer
+                    description: Длительность рассрочки в дни
+                    example: 10
+                  payments_interval:
+                    description: Детали о интервала платежей
+                    required:
+                    - type
+                    - value
+                    type: object
+                    properties:
+                      value:
+                        description: Интервал платежей
+                        example: 3
+                        type: integer
+                      type:
+                        type: string
+                        description: Тип интервала платежей
+                        example: "day"
+                        enum:
+                        - sec
+                        - min
+                        - hour
+                        - day
+                        - month
+                        - year
+
+    checkoutPayments:
+      type: object
+      properties:
+        amount:
+          description: Сумма части платежа
+          type: string
+          example: "1500.00"
+        datetime:
+          description: Дата и время списание части платежа
+          type: string
+          example: "2025-08-01T00:00:00Z"
+        status:
+          description: Статус части платежа
+          type: string
+          example: "coming"
+          enum:
+          - paid
+          - failed
+          - coming
+          - canceled
+          - expected
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ERR_INVALID_REQUEST"
+        message:
+          type: string
+          example: "Invalid request parameters."
+
