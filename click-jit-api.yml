@@ -13,6 +13,7 @@ security:
   # - OAuth2: []
   - bearerAuth: []
 
+
 tags:
   - name: CLICK-JIT API
     description: Универсальные API для BNPL / JIT операций
