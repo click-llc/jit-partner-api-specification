@@ -10,7 +10,8 @@ servers:
     description: Sandbox Environment
 
 security:
-  - OAuth2: []
+  # - OAuth2: []
+  - bearerAuth: []
 
 tags:
   - name: CLICK-JIT API
@@ -51,6 +52,7 @@ paths:
               example:
                 "status": "ERR_TOO_MANY_REQUESTS"
                 "message": "Rate limit exceeded. Please try again later."
+                "errors": null
 
 
   /api/bnpl/partner/v1/accounts/list:
@@ -60,13 +62,20 @@ paths:
       summary: Список карт клиента
       description: Возвращает список доступных карт клиента.
       parameters:
-        - name: clientID
+        - name: clientId
           in: query
           required: true
+          description: "Идентификатор клиента в системе клик"
+          example: 12675
           schema:
             type: integer
-            description: Внтуренний ID пользователя Click
-            example: 3703835
+        - name: serviceId
+          in: query
+          required: true
+          description: "Идентификатор сервиса"
+          example: 123986124
+          schema:
+            type: integer
       responses:
         "200":
           description: Успешный ответ
@@ -75,10 +84,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  accounts:
-                    type: array
-                    items:
-                      type: integer
+                  status:
+                    type: string
+                    description: Статус ответа
+                    example: "Success"
+                  message:  
+                    type: string
+                    description: Описание ответа
+                    example: "Accounts retrieved."
+                  data:
+                    type: object
+                    properties:
+                      accounts:
+                        type: array
+                        items:
+                          anyOf:
+                            - $ref: '#/components/schemas/AccountsListObject'
+                            - $ref: '#/components/schemas/AccountsListObject'
         "400":
           description: Ошибка валидации
           content:
@@ -119,6 +141,9 @@ paths:
                     type: string
                   message:
                     type: string
+                  data:
+                    type: object
+                    example: null
         "400":
           description: Ошибка валидации
           content:
@@ -152,7 +177,7 @@ paths:
                     type: integer
                     description: Уникальный ID платежа.
                     example: 3942185724
-                  status:
+                  paymentStatus:
                     type: integer
                     description: Статус платежа.
                     example: 2
@@ -165,7 +190,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERR_INVALID_REQUEST"
+                  message:
+                    type: string
+                    example: "Invalid request parameters."
         "429":
           description: Too Many Requests - Rate limit exceeded.
           content:
@@ -179,27 +211,37 @@ paths:
 
 components:
   securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        clientCredentials:
-          tokenUrl: https://sandbox-bnpl.click.uz:8000/oauth/token
-          scopes: {}
+    # OAuth2:
+    #   type: oauth2
+    #   flows:
+    #     clientCredentials:
+    #       tokenUrl: https://sandbox-bnpl.click.uz:8000/oauth/token
+    #       scopes: {}
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   schemas:
     CreatePaymentRequest:
       type: object
       required:
-        - client_id
+        - accountId
+        - serviceId
         - amount
         - externalId
         - checkoutId
       properties:
-        client_id:
+        accountId:
           type: number
-          description: "Идентификатор клиента в системе клик"
-          format: integer
+          description: "Идентификатор счета"
+          format: int64
           example: 100001
+        serviceId:
+          type: number
+          description: "Идентификатор сервиса"
+          format: int64
+          example: 10123
         amount:
           type: number
           description: "Сумма платежа"
@@ -219,19 +261,30 @@ components:
     CreatePaymentResponse:
       type: object
       properties:
-        paymentId:
-          type: integer
-          format: int64
-          description: "Идентификатор платежа"
-        paymentStatus:
+        status:
           type: string
-          description: "Статус платежа"
-        statusDescription:
+          description: "Статус операции"
+          example: "Success"
+        message:
           type: string
-          description: "Описание статуса платежа"
-        datetime:
-          type: string
-          description: "Дата и время платежа"
+          description: "Информация об операции"
+          example: "Payment created successfully."
+        data:
+          type: object
+          properties:
+            paymentId:
+              type: integer
+              format: int64
+              description: "Идентификатор платежа"
+              example: 12342
+            status:
+              type: string
+              description: "Статус платежа"
+              example: 2
+            statusDescription:
+              type: string
+              description: "Описание статуса платежа"
+              example: "Успешно"
 
     UpdateApplicationStatusRequest:
       type: object
@@ -257,6 +310,68 @@ components:
           description: "Единый идентификатор для платежей"
           example: "d9892e31-0000-4225-ab03-0c8f34bb70f8"
 
+    AccountsListObject:
+      type: object
+      properties:
+        id:
+          type: number
+          format: int64
+          description: Идентификатор карты
+          example: 37773111
+        name:
+          type: string
+          description: Наименование карты
+          example: "Kapital"
+        card_number:
+          type: string
+          description: Маскированный номер карты 
+          example: "8600 **** **** 1876"
+        expire_date:
+          type: string
+          description: Срок действия карты 
+          example: "0426"
+        status:
+          type: integer
+          description: Статус активности карты
+          example: 1
+        status_text:
+          type: string
+          description: Статус активности карты 
+          example: "Активна"
+        type:
+          type: string
+          description: Тип карты
+          example: "SMARTV"
+        is_default:
+          type: boolean
+          description: Карта по умолчанию
+          example: true
+        holder:
+          type: string
+          description: Имя владельца карты
+          example: "USMANOV USMAN"
+        currency_code:
+          type: string
+          description: Валюта карты 
+          example: "UZS"
+        mini_logo_url:
+          type: string
+          description: URL лого маленькое 
+          example: "https://cdn.click.uz/app/evo_new/card/uzcard/kptl-mini-logo_v1.png"
+        logo_url:
+          type: string
+          description: URL лого
+          example: "https://cdn.click.uz/app/evo_new/card/uzcard/kptl-logo_v1.png"
+        monitoring_status:
+          type: integer
+          description: Мониторинг статус
+          example: 0
+        monitoring_available:
+          type: boolean
+          description: Возможность включения мониторинга
+          example: true
+        
+
     ErrorResponse:
       type: object
       properties:
@@ -266,6 +381,9 @@ components:
         message:
           type: string
           example: "Invalid request parameters."
+        errors:
+          type: object
+          example: null
 
     ErrorResponseRefund:
       type: object
@@ -276,3 +394,4 @@ components:
         message:
           type: string
           example: "Invalid request parameters."
+        

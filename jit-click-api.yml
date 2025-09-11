@@ -209,7 +209,11 @@ components:
                 description: Детали платежа
                 type: array
                 items:
-                  $ref: '#/components/schemas/checkoutPayments'
+                  anyOf:
+                    - $ref: '#/components/schemas/checkoutPayments'        
+                    # - $ref: '#/components/schemas/checkoutPayments'
+                    # - $ref: '#/components/schemas/checkoutPayments'
+                    # - $ref: '#/components/schemas/checkoutPayments'
               sum:
                 type: string
                 description: Общая сумма платежа

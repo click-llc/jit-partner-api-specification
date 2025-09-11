@@ -1,0 +1,82 @@
+@startuml
+
+actor User
+participant "Click App" as CA
+participant "MiniApp JIT" as miniJit
+participant "Click Evolution" as CE
+participant "Click BNPL" as CBNPL
+database "Click BNPL DB" as CBNPLDB
+participant "Click Acquiring" as CAcquiring
+participant "JIT backend" as jitBack
+
+
+
+== Click-Комплит, отрисовка виджета ==
+
+User -> CA: Checkout page
+CA -> CE : Создать заказ(click_user_id, корзина)
+CE -> CBNPL : Создать заказ(click_user_id, корзина)
+CBNPL -> CBNPL: Прескор клиента (Проверка на белый лист)
+CBNPL -> CBNPL: Проверка доступности параметры мерчанта 
+alt (отказ) Не прошел прескор 
+CBNPL --> CE: через JIT невозможно платить
+CE --> CA: Отказ
+CA --> User: Отказ / Может платить другим способом
+else (успешно) Прошел прескор
+CBNPL -> CBNPL : Сгенерировать checkout_id
+CBNPL -> jitBack : Создать заказ(checkout_id, click_user_id, корзина)
+jitBack -> jitBack : Сохранить(checkout_id, click_user_id) 
+jitBack -> jitBack: Проверка доступности лимита клиента
+
+alt (отказ) Не прошел проверку
+jitBack --> CBNPL: Не прошел проверку (отказ)
+CBNPL --> CE: через JIT невозможно платить
+CE --> CA: Отказ
+CA --> User: Отказ / Может платить другим способом
+
+else (успешно) Прошел проверку
+jitBack --> CBNPL: Прошел проверку (Вернуть планы)
+CBNPL ->> CBNPLDB: Commit checkout_id
+CBNPL --> CE: Заказ создан, планы списаний
+CE --> CA: Заказ создан, планы списаний
+CA --> User: Виджет с планами
+
+== Оформление JIT ==
+
+User -> CA: Оформить JIT
+CA -> CE: payWithJIT(checkout_id, click_card_id, \nprovider_id)
+
+CE -> CBNPL: /pay (checkout_id, click_card_id)
+CBNPL ->> miniJit: Редирект клиента в миниапп JIT
+miniJit --> User: Показывает лоадер
+miniJit -> jitBack: Запрос на подтверждение оформление JIT
+jitBack -> jitBack: Проверка наличие лимита клиента
+alt (ошибка/отказ) Не прошел проверку
+jitBack --> miniJit: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
+miniJit --> User: Ошибка при платеже / Показывает причину ошибки
+else (успешно) Можно провести первый платеж
+jitBack -> CBNPL: POST \n/api/bnpl/partner/v1/payment \nотправляет 0 сум
+CBNPL -> CAcquiring: Проведи платеж
+CAcquiring -> CAcquiring: Авторизация (click_user_id, click_card_id)
+CAcquiring -> CAcquiring: Проведет первый платеж
+alt Ошибка при проведение платежа
+CAcquiring --> CBNPL: Ошибка при платеже \n+причина ошибки
+CBNPL --> jitBack: Отправит статус платежа в ответе \nОшибка при платеже \n+причина ошибки
+jitBack --> miniJit: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
+miniJit --> User: Ошибка при платеже / Показывает причину ошибки
+else Платеж проведен успешно
+CAcquiring --> CBNPL: Платеж проведен
+CBNPL -> CBNPLDB: Сохранить платеж
+CBNPL --> jitBack: Отправит статус платежа в ответе
+jitBack --> miniJit: Показывает ответ в миниапп | JIT успешно оформлен
+miniJit --> User: JIT успешно оформлен
+
+end
+jitBack -> CBNPL: GET \n/api/bnpl/general/v2/payment/state
+CBNPL -> CBNPL: Get payment status from click core system
+CBNPL --> jitBack: Payment status
+end
+end
+end
+
+@enduml
