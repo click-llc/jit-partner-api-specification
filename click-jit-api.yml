@@ -24,7 +24,7 @@ paths:
       tags:
         - CLICK-JIT API
       summary: Создание платежа
-      description: Создает новый платеж через JIT. Поля isFee и isPenalty являются опциональными. Эти поля нельзя отправить вместе в одном зопросе.
+      description: Создает новый платеж через JIT. Поля isFee и isPenalty являются опциональными. Эти поля нельзя отправить вместе в одном запросе.
       requestBody:
         required: true
         content:
@@ -247,6 +247,11 @@ components:
           description: "Идентификатор сервиса"
           format: int64
           example: 10123
+        providerUuid:
+          type: string
+          description: "Идентификатор партнера"
+          format: uuid
+          example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
         amount:
           type: number
           description: "Сумма платежа"
@@ -282,6 +287,11 @@ components:
           description: "Идентификатор сервиса"
           format: int64
           example: 10123
+        providerUuid:
+          type: string
+          description: "Идентификатор партнера"
+          format: uuid
+          example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
         amount:
           type: number
           description: "Сумма платежа"
@@ -321,6 +331,11 @@ components:
           description: "Идентификатор сервиса"
           format: int64
           example: 10123
+        providerUuid:
+          type: string
+          description: "Идентификатор партнера"
+          format: uuid
+          example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
         amount:
           type: number
           description: "Сумма платежа"
