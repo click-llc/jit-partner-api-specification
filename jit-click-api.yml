@@ -24,7 +24,7 @@ paths:
       summary: Получить планы списаний
       description: Отправка запрос на прескор клиента и получение планы списаний
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -43,8 +43,93 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /click/api/v1/refund/create:
+    post:
+      tags:
+        - JIT-CLICK API
+      summary: Получить планы списаний
+      description: Отправка запрос на прескор клиента и получение планы списаний
+      parameters:
+        - name: x-idempotency-token
+          in: header
+          required: true
+          description: "Токен идемпотентности"
+          example: "a5b27197-851b-4a02-9904-07d65c715d01"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                checkout_id:
+                  type: string
+                  format: uuid
+                  description: Идентификатор рассрочки
+                  example: "54810b0e-65b8-44cf-9cf9-5b8546bce51c"
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refund_id:
+                    type: string
+                    format: uuid
+                    description: Идентификатор возврата рассрочки
+                    example: "6293078c-3692-4284-a22f-d833af392612"
+        "400":
+          description: Default Error Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  
+  /click/api/v1/refund/info:
+    post:
+      tags:
+        - JIT-CLICK API
+      summary: Получить планы списаний
+      description: Отправка запрос на прескор клиента и получение планы списаний
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refund_id:
+                  type: string
+                  format: uuid
+                  description: Идентификатор возврата рассрочки
+                  example: "6293078c-3692-4284-a22f-d833af392612"
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - draft
+                      - processing
+                      - failed
+                      - approved
+                    description: Cтатус возврата рассрочки
+                    example: "6293078c-3692-4284-a22f-d833af392612"
+        "400":
+          description: Default Error Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 
 components:
@@ -290,7 +375,7 @@ components:
     ErrorResponse:
       type: object
       properties:
-        status:
+        code:
           type: string
           example: "ERR_INVALID_REQUEST"
         message:

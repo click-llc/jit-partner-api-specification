@@ -212,6 +212,42 @@ paths:
               example:
                 "status": "ERR_TOO_MANY_REQUESTS"
                 "message": "Rate limit exceeded. Please try again later."
+  
+  /api/bnpl/general/v1/payment/specific/refund:
+    patch:
+      tags:
+        - CLICK-JIT API
+      summary: Возврат платежа по payment ID
+      description: Возврат платежа по payment ID.
+      parameters:
+        - name: accAuth
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Уникальный ID платежа ввиде JWT токена.
+            example: "paymentId - eyJhbGciOiJIUzI1NiIsInR5..."
+      responses:
+        "200":
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refundCompleted:
+                    type: boolean
+                    example: true
+                  statusDescription:
+                    type: string
+                    description: Описание статуса.
+                    example: "Возврат оформлен."
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponseRefund"
 
 
 components:
