@@ -1,0 +1,64 @@
+@startuml
+
+actor ARM
+participant "Click BNPL service" as CBNPL
+database "Click BNPL DB" as CBNPLDB
+participant "Click core" as cc
+participant "JIT backend" as jitBack
+
+== Создание процеccа возврат денег BNPL ==
+
+ARM -> CBNPL: Запрос на возврат денег \nPATCH \n/api/bnpl/v1/internal/payment/refund \n"paymentId"
+CBNPL -> CBNPLDB: Создаёт запись со статусом "draft"
+CBNPL -> jitBack: POST \n/click/api/v1/refund/create \n"checkout_id"
+jitBack -> jitBack: Создать запись для возвратов \nСоздается со статусом "draft"
+/note over jitBack
+Этот запрос триггерит 
+цикла в котором отменяется
+все платежи которые 
+до этого проводили
+end note
+jitBack --> CBNPL: Возвращает в ответе "refund_id"
+CBNPL -> CBNPLDB: Обновляет запись - статус "processing"
+CBNPL --> ARM: Запрос принят на обработку
+
+
+== Процеcc возврат денег на стороне JIT ==
+
+jitBack -> jitBack: Получает все совершённые платежи по "checkout_id"
+jitBack -> jitBack: Обновляет статус возврата на "processing"
+loop Все платежи отменены
+jitBack -> CBNPL: PATCH \n/api/bnpl/general/v1/payment/specific/refund
+CBNPL -> cc: Запрос на отмену платежа по "payment_id"
+cc -> cc: Отменяет платежа
+cc --> CBNPL: Ответ со статусом
+CBNPL --> jitBack: "refundCompleted", "statusDescription"
+end
+jitBack -> jitBack: Обновляет статус возврата на "approved"
+
+== Процеcc возврат денег на стороне CLICK ==
+
+/note over CBNPL
+Есть цикл который проверяет 
+все возвраты со статусами
+"draft"/"processing"
+(каждые 10 сек)
+end note
+loop refund_status == approved
+CBNPL -> jitBack: POST \n/click/api/v1/refund/info \n"refund_id"
+jitBack --> CBNPL: Возвращает в ответе "status"
+
+end
+CBNPL -> CBNPL: Получил ответ что статус возвратов = "approved"
+CBNPL -> cc: Отправит запрос для возврата b2b платежа
+cc -> cc: Отменяет b2b платежа
+cc --> CBNPL: Ответ со статусом
+CBNPL -> cc: Дополнительная проверка \nеще раз проверяет из CORE базы
+cc --> CBNPL: "message"
+alt "message" == "Платеж отменен"
+CBNPL -> CBNPLDB: Сохраняет "is_b2b_refund" = true.
+else ошибка
+CBNPL -> CBNPL: Сохраняет "is_b2b_refund" = false.
+CBNPL -> CBNPL: Сохраняет Отправит заявку на ручные отмены
+end
+@enduml

@@ -219,14 +219,23 @@ paths:
         - CLICK-JIT API
       summary: Возврат платежа по payment ID
       description: Возврат платежа по payment ID.
-      parameters:
-        - name: accAuth
-          in: query
-          required: true
-          schema:
-            type: string
-            description: Уникальный ID платежа ввиде JWT токена.
-            example: "paymentId - eyJhbGciOiJIUzI1NiIsInR5..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentId:
+                  type: integer
+                  format: int64
+                  description: "Идентификатор платежа"
+                  example: 12342
+                providerUuid:
+                  type: string
+                  description: "Идентификатор партнера"
+                  format: uuid
+                  example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
       responses:
         "200":
           description: Успешный ответ
@@ -272,6 +281,7 @@ components:
         - amount
         - externalId
         - checkoutId
+        - providerUuid
       properties:
         accountId:
           type: number
