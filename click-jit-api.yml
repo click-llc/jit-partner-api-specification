@@ -213,7 +213,7 @@ paths:
                 "status": "ERR_TOO_MANY_REQUESTS"
                 "message": "Rate limit exceeded. Please try again later."
   
-  /api/bnpl/general/v1/payment/specific/refund:
+  /api/bnpl/general/v2/payment/specific/refund:
     patch:
       tags:
         - CLICK-JIT API
