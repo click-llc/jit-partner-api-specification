@@ -58,7 +58,43 @@ paths:
                 "status": "ERR_TOO_MANY_REQUESTS"
                 "message": "Rate limit exceeded. Please try again later."
                 "errors": null
-
+  
+  /api/bnpl/partner/v1/payment/ofd-links:
+    get:
+      tags:
+        - CLICK-JIT API
+      summary: Возврат платежи с OFD ссылками
+      description: Возврат платежи с OFD ссылками
+      parameters:
+        - name: checkoutId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+            description: Уникальный ID чекаута.
+            example: "436aac1f-5bcf-4ea2-805f-028c518c7a46"
+        - name: providerUuid
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+            description: Уникальный ID провайдера.
+            example: "436aac1f-5bcf-4ea2-805f-028c518c7a46"
+      responses:
+        "200":
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOfdLinkResponse"
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/bnpl/partner/v1/accounts/list:
     get:
@@ -313,6 +349,39 @@ components:
           description: "Единый идентификатор для платежей"
           format: uuid
           example: "d9892e31-0000-4225-ab03-0c8f34bb70f8"
+          
+    GetOfdLinkResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Статус операции"
+          example: "Success"
+        message:
+          type: string
+          description: "Информация об операции"
+          example: "Links retrieved."
+        data:
+          type: array
+          items:
+            properties:
+              externalId:
+                type: string
+                format: uuid
+                description: "Идентификатор платежа"
+                example: "d9892e31-6669-0000-0000-0c8f34aa70f8"
+              type:
+                type: string
+                description: "Тип платежа"
+                example: "b2b"
+              link:
+                type: string
+                description: "Ссылка чека OFD"
+                example: "https://ofd.soliq.uz/epi?t=12345&r=12345&c=12345&s=12345"
+              createdAt:
+                type: string
+                description: "Время создания платежа"
+                example: "2025-10-30T09:42:39.000000Z"
 
     CreatePaymentFeeRequest:
       type: object
