@@ -1,2 +1,2 @@
-# jit-partner-api-specification
-Just in Time partner specification
+# partner-api-specification
+Partner API specification
