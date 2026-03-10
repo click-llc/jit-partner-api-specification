@@ -2,12 +2,12 @@
 
 actor User
 participant "Click App" as CA
-participant "MiniApp JIT" as miniJit
+participant "MiniApp Partner" as miniPartner
 participant "Click Evolution" as CE
 participant "Click BNPL" as CBNPL
 database "Click BNPL DB" as CBNPLDB
 participant "Click Acquiring" as CAcquiring
-participant "JIT backend" as jitBack
+participant "Partner backend" as partnerBack
 
 
 
@@ -19,78 +19,78 @@ CE -> CBNPL : Создать заказ(click_user_id, корзина)
 CBNPL -> CBNPL: Прескор клиента (Проверка на белый лист)
 CBNPL -> CBNPL: Проверка доступности параметры мерчанта 
 alt (отказ) Не прошел прескор 
-CBNPL --> CE: через JIT невозможно платить
+CBNPL --> CE: через Partner невозможно платить
 CE --> CA: Отказ
 CA --> User: Отказ / Может платить другим способом
 else (успешно) Прошел прескор
 CBNPL -> CBNPL : Сгенерировать checkout_id
-CBNPL -> jitBack : Создать заказ(checkout_id, click_user_id, корзина)
-jitBack -> jitBack : Сохранить(checkout_id, click_user_id) 
-jitBack -> jitBack: Проверка доступности лимита клиента
+CBNPL -> partnerBack : Создать заказ(checkout_id, click_user_id, корзина)
+partnerBack -> partnerBack : Сохранить(checkout_id, click_user_id) 
+partnerBack -> partnerBack: Проверка доступности лимита клиента
 
 alt (отказ) Не прошел проверку
-jitBack --> CBNPL: Не прошел проверку (отказ)
-CBNPL --> CE: через JIT невозможно платить
+partnerBack --> CBNPL: Не прошел проверку (отказ)
+CBNPL --> CE: через Partner невозможно платить
 CE --> CA: Отказ
 CA --> User: Отказ / Может платить другим способом
 
 else (успешно) Прошел проверку
-jitBack --> CBNPL: Прошел проверку (Вернуть планы)
+partnerBack --> CBNPL: Прошел проверку (Вернуть планы)
 CBNPL ->> CBNPLDB: Commit checkout_id
 CBNPL --> CE: Заказ создан, планы списаний
 CE --> CA: Заказ создан, планы списаний
 CA --> User: Виджет с планами
 
-== Оформление JIT ==
+== Оформление Partner ==
 
-User -> CA: Оформить JIT
-CA -> CE: payWithJIT(checkout_id, click_card_id, \nprovider_id)
+User -> CA: Оформить Partner
+CA -> CE: payWithPartner(checkout_id, click_card_id, \nprovider_id)
 
 CE -> CBNPL: /pay (checkout_id, click_card_id)
-CBNPL ->> miniJit: Редирект клиента в миниапп JIT
-miniJit --> User: Показывает лоадер
-miniJit -> jitBack: Запрос на подтверждение оформление JIT
-jitBack -> jitBack: Проверка наличие лимита клиента
+CBNPL ->> miniPartner: Редирект клиента в миниапп Partner
+miniPartner --> User: Показывает лоадер
+miniPartner -> partnerBack: Запрос на подтверждение оформление Partner
+partnerBack -> partnerBack: Проверка наличие лимита клиента
 alt (ошибка/отказ) Не прошел проверку
-jitBack --> miniJit: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
-miniJit --> User: Ошибка при платеже / Показывает причину ошибки
+partnerBack --> miniPartner: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
+miniPartner --> User: Ошибка при платеже / Показывает причину ошибки
 else (успешно) Можно провести первый платеж
-jitBack -> CBNPL: POST \n/api/bnpl/partner/v1/payment \nотправляет 0 сум
+partnerBack -> CBNPL: POST \n/api/bnpl/partner/v1/payment \nотправляет 0 сум
 CBNPL -> CAcquiring: Проведи платеж
 CAcquiring -> CAcquiring: Авторизация (click_user_id, click_card_id)
 CAcquiring -> CAcquiring: Проведет первый платеж
 alt Неизвестная ошибка(со статусом 500) при проведение платежа
 CAcquiring --> CBNPL: Ошибка при платеже \n+причина ошибки
-CBNPL --> jitBack: Отправит статус платежа в ответе \nОшибка при платеже \n+причина ошибки
-jitBack -> CBNPL: GET \n/api/bnpl/general/v2/payment/state
+CBNPL --> partnerBack: Отправит статус платежа в ответе \nОшибка при платеже \n+причина ошибки
+partnerBack -> CBNPL: GET \n/api/bnpl/general/v2/payment/state
 CBNPL -> CBNPL: Get payment status from click core system
-CBNPL --> jitBack: Payment status
+CBNPL --> partnerBack: Payment status
 alt ошибка(со статусом 500)
-jitBack --> miniJit: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
-miniJit --> User: Ошибка при платеже / Показывает причину ошибки
+partnerBack --> miniPartner: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
+miniPartner --> User: Ошибка при платеже / Показывает причину ошибки
 else status = 2 (со статусом 200)
-jitBack --> miniJit: Показывает ответ в миниапп | JIT успешно оформлен
-miniJit --> User: JIT успешно оформлен
+partnerBack --> miniPartner: Показывает ответ в миниапп | Partner успешно оформлен
+miniPartner --> User: Partner успешно оформлен
 end
 else Ошибка(со статусом 200) при проведение платежа
 CAcquiring --> CBNPL: Ошибка при платеже \n+причина ошибки
-CBNPL --> jitBack: Отправит статус платежа в ответе \nОшибка при платеже \n+причина ошибки
-jitBack -> CBNPL: GET \n/api/bnpl/general/v2/payment/state
+CBNPL --> partnerBack: Отправит статус платежа в ответе \nОшибка при платеже \n+причина ошибки
+partnerBack -> CBNPL: GET \n/api/bnpl/general/v2/payment/state
 CBNPL -> CBNPL: Get payment status from click core system
-CBNPL --> jitBack: Payment status
+CBNPL --> partnerBack: Payment status
 alt ошибка(со статусом 500)
-jitBack --> miniJit: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
-miniJit --> User: Ошибка при платеже / Показывает причину ошибки
+partnerBack --> miniPartner: Показывает ответ в миниапп на миниапп | Ошибка при платеже \n+причина ошибки
+miniPartner --> User: Ошибка при платеже / Показывает причину ошибки
 else status = 2 (со статусом 200)
-jitBack --> miniJit: Показывает ответ в миниапп | JIT успешно оформлен
-miniJit --> User: JIT успешно оформлен
+partnerBack --> miniPartner: Показывает ответ в миниапп | Partner успешно оформлен
+miniPartner --> User: Partner успешно оформлен
 end
 else Платеж проведен успешно
 CAcquiring --> CBNPL: Платеж проведен
 CBNPL -> CBNPLDB: Сохранить платеж
-CBNPL --> jitBack: Отправит статус платежа в ответе
-jitBack --> miniJit: Показывает ответ в миниапп | JIT успешно оформлен
-miniJit --> User: JIT успешно оформлен
+CBNPL --> partnerBack: Отправит статус платежа в ответе
+partnerBack --> miniPartner: Показывает ответ в миниапп | Partner успешно оформлен
+miniPartner --> User: Partner успешно оформлен
 
 end
 end

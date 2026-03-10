@@ -1,8 +1,8 @@
 openapi: "3.0.0"
 info:
-  title: CLICK-JIT BNPL API specification
+  title: CLICK Partner BNPL API specification
   description: >
-    Универсальные API для управление BNPL (JIT-CLICK)
+    Универсальные API для управление BNPL (Partner-CLICK)
   version: "1.0.4"
 
 servers:
@@ -13,14 +13,14 @@ security:
   - OAuth2: []
 
 tags:
-  - name: JIT-CLICK API
-    description: Универсальные API для BNPL / JIT операций
+  - name: Partner-CLICK API
+    description: Универсальные API для BNPL / Partner операций
 
 paths:
   /click/api/v1/checkout-with-plans/get:
     post:
       tags:
-        - JIT-CLICK API
+        - Partner-CLICK API
       summary: Получить планы списаний
       description: Отправка запрос на прескор клиента и получение планы списаний
       requestBody:
@@ -35,7 +35,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/jitPlanSchema'
+                $ref: '#/components/schemas/partnerPlanSchema'
         "400":
           description: Default Error Response
           content:
@@ -46,7 +46,7 @@ paths:
   /click/api/v1/refund/create:
     post:
       tags:
-        - JIT-CLICK API
+        - Partner-CLICK API
       summary: Получить планы списаний
       description: Отправка запрос на прескор клиента и получение планы списаний
       parameters:
@@ -92,7 +92,7 @@ paths:
   /click/api/v1/refund/info:
     post:
       tags:
-        - JIT-CLICK API
+        - Partner-CLICK API
       summary: Получить планы списаний
       description: Отправка запрос на прескор клиента и получение планы списаний
       requestBody:
@@ -249,7 +249,7 @@ components:
                     description: Общая сумма товаров
                     example: "20000.00"
 
-    jitPlanSchema:
+    partnerPlanSchema:
       required:
       - plans
       type: object
@@ -280,16 +280,16 @@ components:
                 type: string
                 enum:
                 - full_payment
-                - base_jit
-                - long_jit
+                - base_partner
+                - long_partner
                 - credit_full_payment
                 - pay_full_payment
                 - pay_later
-                - base_jit_uz
+                - base_partner_uz
               constructor:
                 description: Тип конструктора оплаты
                 type: string
-                example: "jit_10_days_afterpay_uz"
+                example: "partner_10_days_afterpay_uz"
               payments:
                 description: Детали платежа
                 type: array
